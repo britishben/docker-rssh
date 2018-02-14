@@ -2,17 +2,24 @@
 # Based on entrypoint of https://github.com/atmoz/sftp
 
 # prepare rssh.conf
-echo "logfacility = LOG_USER" > /etc/rssh.conf
-echo "allowscp" >> /etc/rssh.conf
-echo "allowsftp" >> /etc/rssh.conf
-echo "allowrsync" >> /etc/rssh.conf
-echo "umask = 022" >> /etc/rssh.conf
-#echo "chrootpath=/home" >> /etc/rssh.conf
+cat > /etc/rssh.conf << "EOT"
+logfacility = LOG_USER
+
+allowrsync
+#allowrdist
+#allowcvs
+allowsftp
+allowscp
+
+umask = 022
+#chrootpath=/home
+
+EOT
 
 # go through given users
 for users in "$@"; do
     # split user
-    IFS=':' read -a data <<< "$users"
+    IFS=':' read -ra data <<< "$users"
 
     # get user and password
     user="${data[0]}"
@@ -31,39 +38,38 @@ for users in "$@"; do
         gid="${data[3]}"
     fi
 
-    # prepare useradd option
+    # prepare useradd options
     useraddOptions="--create-home --no-user-group --shell /usr/bin/rssh"
 
     # add user id if given
     if [ -n "$uid" ]; then
-        useraddOptions="$useraddOptions --non-unique --uid $uid"
+        useraddOptions+=" --non-unique --uid $uid"
     fi
 
     # add group id if given
     if [ -n "$gid" ]; then
-        useraddOptions="$useraddOptions --gid $gid"
+        useraddOptions+=" --gid $gid"
 
-        # add group (suppress warning if group exist)
+        # add group (suppress warning if group exists)
         groupadd --gid $gid $gid 2> /dev/null
     fi
 
-    # add user (suppress warning if user exist)
-    useradd $useraddOptions $user 2> /dev/null
-
-    # add rssh entry
-    echo "user=$user:011:100110:" >> /etc/rssh.conf
+    # add user (suppress warning if user exists)
+    useradd "$useraddOptions" $user 2> /dev/null
 
     # if no password given create random password
     if [ -z "$pass" ]; then
-        pass="$(echo `</dev/urandom tr -dc A-Za-z0-9 | head -c256`)"
+        pass="$(tr -dc [:alnum:] < /dev/urandom | head -c256)"
         chpasswdOptions=""
     fi
 
     # set password
-    echo "$user:$pass" | chpasswd $chpasswdOptions
+    chpasswd $chpasswdOptions <<< "$user:$pass"    
+
+    # add rssh entry
+    echo "user=$user:011:10011:" >> /etc/rssh.conf
 
 done
-echo >> /etc/rssh.conf
 
 # start ssh daemon
 exec /usr/sbin/sshd -D -e
