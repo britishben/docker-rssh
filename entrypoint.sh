@@ -51,15 +51,15 @@ for users in "$@"; do
         useraddOptions+=" --gid $gid"
 
         # add group (suppress warning if group exists)
-        groupadd --gid $gid $gid 2> /dev/null
+        groupadd --gid "$gid" "$gid" 2> /dev/null
     fi
 
     # add user (suppress warning if user exists)
-    useradd "$useraddOptions" $user 2> /dev/null
+    useradd "$useraddOptions" "$user" 2> /dev/null
 
     # if no password given create random password
     if [ -z "$pass" ]; then
-        pass="$(tr -dc [:alnum:] < /dev/urandom | head -c256)"
+        pass="$(tr -dc "[:alnum:]" < /dev/urandom | head -c256)"
         chpasswdOptions=""
     fi
 
