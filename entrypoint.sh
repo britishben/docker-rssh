@@ -39,7 +39,7 @@ for users in "$@"; do
     fi
 
     # validate username and skip if bad
-    if [[ ! "$user" =~ "^[._[:alnum:]][.-_[:alnum:]]{0,31}$" ]]; then # POSIX.1-2008
+    if [[ ! "$user" =~ ^[._[:alnum:]][.-_[:alnum:]]{0,31}$ ]]; then # POSIX.1-2008
         echo "ERROR: Invalid username \"$user\""
         continue
     fi
