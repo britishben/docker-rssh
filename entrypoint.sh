@@ -38,6 +38,18 @@ for users in "$@"; do
         gid="${data[3]}"
     fi
 
+    # validate username and skip if bad
+    if [[ ! "$user" =~ "^[._[:alnum:]][.-_[:alnum:]]{0,31}$" ]]; then # POSIX.1-2008
+        echo "ERROR: Invalid username \"$user\""
+        continue
+    fi
+    
+    # if no password given, create random password
+    if [ -z "$pass" ]; then
+        pass="$(tr -dc "[:alnum:]" < /dev/urandom | head -c256)"
+        chpasswdOptions=""
+    fi
+
     # prepare useradd options
     useraddOptions="--create-home --no-user-group --shell /usr/bin/rssh"
 
@@ -56,12 +68,6 @@ for users in "$@"; do
 
     # add user (suppress warning if user exists)
     useradd "$useraddOptions" "$user" 2> /dev/null
-
-    # if no password given create random password
-    if [ -z "$pass" ]; then
-        pass="$(tr -dc "[:alnum:]" < /dev/urandom | head -c256)"
-        chpasswdOptions=""
-    fi
 
     # set password
     chpasswd $chpasswdOptions <<< "$user:$pass"    
